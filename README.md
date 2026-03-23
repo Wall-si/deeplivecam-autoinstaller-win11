@@ -38,7 +38,7 @@ From this folder, run:
 2. Friend runs:
 
 ```powershell
-git clone <your-repo-url>
+git clone https://github.com/Wall-si/deeplivecam-autoinstaller-win11?ysclid=mn3l5wa6r2556595172
 cd deeplivecam-auto-installer
 .\install.bat
 ```
