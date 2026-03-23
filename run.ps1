@@ -2,8 +2,9 @@ $ErrorActionPreference = "Stop"
 
 try {
     $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $pythonExe = Join-Path $root ".venv\Scripts\python.exe"
-    $projectDir = Join-Path $root "Deep-Live-Cam"
+    $runtimeRoot = Join-Path $env:LOCALAPPDATA "DLC"
+    $pythonExe = Join-Path $runtimeRoot ".venv\Scripts\python.exe"
+    $projectDir = Join-Path $runtimeRoot "Deep-Live-Cam"
 
     if (-not (Test-Path $pythonExe) -or -not (Test-Path $projectDir)) {
         Write-Host "DeepLiveCam is not installed yet. Running install.ps1 first..." -ForegroundColor Yellow
@@ -13,6 +14,7 @@ try {
         }
     }
 
+    Write-Host "Running from: $runtimeRoot" -ForegroundColor DarkCyan
     & $pythonExe (Join-Path $projectDir "run.py")
     if ($LASTEXITCODE -ne 0) {
         throw "DeepLiveCam exited with an error code: $LASTEXITCODE"

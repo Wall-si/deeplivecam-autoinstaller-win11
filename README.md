@@ -6,7 +6,7 @@ Your friend can clone it and run one script to download and install Deep-Live-Ca
 ## What this repo does
 
 - clones official project: `hacksider/Deep-Live-Cam`
-- creates local Python virtual environment (`.venv`)
+- creates Python virtual environment in short path `%LOCALAPPDATA%\DLC\.venv`
 - installs all required dependencies
 - installs GFPGAN compatibility packages
 - starts first run to download models
@@ -45,6 +45,7 @@ cd deeplivecam-auto-installer
 
 ## Notes
 
-- Installed app source will be inside `Deep-Live-Cam/`.
-- Virtual environment will be in `.venv/`.
+- Installed app source will be in `%LOCALAPPDATA%\DLC\Deep-Live-Cam`.
+- Virtual environment will be in `%LOCALAPPDATA%\DLC\.venv`.
+- Short runtime path avoids `WinError 206` (too long file/path names on Windows).
 - Installer removes broken ONNX pins from upstream requirements, then auto-tries several compatible ONNX packages (`gpu`, `directml`, `cpu`) until one installs.

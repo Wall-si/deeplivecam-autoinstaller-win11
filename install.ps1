@@ -40,8 +40,13 @@ Ensure-Command "git"
 Ensure-Command "python"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectDir = Join-Path $root "Deep-Live-Cam"
-$venvDir = Join-Path $root ".venv"
+$runtimeRoot = Join-Path $env:LOCALAPPDATA "DLC"
+$projectDir = Join-Path $runtimeRoot "Deep-Live-Cam"
+$venvDir = Join-Path $runtimeRoot ".venv"
+if (-not (Test-Path $runtimeRoot)) {
+    New-Item -ItemType Directory -Path $runtimeRoot | Out-Null
+}
+Write-Step "Using short runtime path: $runtimeRoot"
 
 Write-Step "Cloning (or updating) Deep-Live-Cam"
 if (-not (Test-Path $projectDir)) {
@@ -65,7 +70,7 @@ Invoke-PythonPip -Arguments @("install", "--upgrade", "pip") -ErrorMessage "Fail
 
 Write-Step "Installing Deep-Live-Cam dependencies"
 $requirementsPath = Join-Path $projectDir "requirements.txt"
-$patchedRequirements = Join-Path $root "requirements.patched.txt"
+$patchedRequirements = Join-Path $runtimeRoot "requirements.patched.txt"
 $requirementsContent = Get-Content $requirementsPath
 # Remove ONNX runtime pins from upstream requirements to avoid broken Windows/Python combinations.
 $requirementsContent = $requirementsContent | Where-Object {
