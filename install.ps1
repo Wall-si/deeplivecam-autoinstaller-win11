@@ -18,6 +18,17 @@ function Try-Install-WithWinget([string]$Id, [string]$Label) {
     winget install --id $Id --accept-source-agreements --accept-package-agreements --silent
 }
 
+function Invoke-PythonPip {
+    param(
+        [string[]]$Arguments,
+        [string]$ErrorMessage
+    )
+    & $pythonExe -m pip @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw $ErrorMessage
+    }
+}
+
 Write-Step "Checking required tools"
 if (-not (Get-Command "git" -ErrorAction SilentlyContinue)) {
     Try-Install-WithWinget -Id "Git.Git" -Label "Git"
@@ -50,29 +61,45 @@ if (-not (Test-Path $pythonExe)) {
 }
 
 Write-Step "Upgrading pip"
-& $pythonExe -m pip install --upgrade pip
+Invoke-PythonPip -Arguments @("install", "--upgrade", "pip") -ErrorMessage "Failed to upgrade pip."
 
 Write-Step "Installing Deep-Live-Cam dependencies"
 $requirementsPath = Join-Path $projectDir "requirements.txt"
-try {
-    & $pythonExe -m pip install -r $requirementsPath
-} catch {
-    Write-Host "Default requirements failed, trying compatible ONNX fallback..." -ForegroundColor Yellow
-    $patchedRequirements = Join-Path $root "requirements.patched.txt"
-    $requirementsContent = Get-Content $requirementsPath
-    $requirementsContent = $requirementsContent | ForEach-Object {
-        if ($_ -match "^onnxruntime-gpu==") { "onnxruntime-gpu==1.23.2" }
-        elseif ($_ -match "^onnxruntime==") { "onnxruntime==1.23.2" }
-        else { $_ }
+$patchedRequirements = Join-Path $root "requirements.patched.txt"
+$requirementsContent = Get-Content $requirementsPath
+# Remove ONNX runtime pins from upstream requirements to avoid broken Windows/Python combinations.
+$requirementsContent = $requirementsContent | Where-Object {
+    $_ -notmatch "^onnxruntime([\-a-z]*)?=="
+}
+Set-Content -Path $patchedRequirements -Value $requirementsContent -Encoding ASCII
+Invoke-PythonPip -Arguments @("install", "-r", $patchedRequirements) -ErrorMessage "Failed to install base requirements."
+
+Write-Step "Installing ONNX runtime with safe fallback"
+Invoke-PythonPip -Arguments @("uninstall", "-y", "onnxruntime-gpu", "onnxruntime-directml", "onnxruntime") -ErrorMessage "Failed to remove broken ONNX runtime packages."
+$onnxCandidates = @(
+    "onnxruntime-gpu==1.23.2",
+    "onnxruntime-directml==1.21.0",
+    "onnxruntime==1.23.2",
+    "onnxruntime==1.21.0"
+)
+$onnxInstalled = $false
+foreach ($candidate in $onnxCandidates) {
+    Write-Host "Trying $candidate ..." -ForegroundColor DarkCyan
+    & $pythonExe -m pip install $candidate
+    if ($LASTEXITCODE -eq 0) {
+        $onnxInstalled = $true
+        Write-Host "Installed $candidate" -ForegroundColor Green
+        break
     }
-    Set-Content -Path $patchedRequirements -Value $requirementsContent -Encoding ASCII
-    & $pythonExe -m pip install -r $patchedRequirements
+}
+if (-not $onnxInstalled) {
+    throw "Could not install any compatible ONNX runtime package."
 }
 
 Write-Step "Installing GFPGAN / BasicSR compatibility packages"
-& $pythonExe -m pip install git+https://github.com/xinntao/BasicSR.git@master
-& $pythonExe -m pip uninstall gfpgan -y
-& $pythonExe -m pip install git+https://github.com/TencentARC/GFPGAN.git@master
+Invoke-PythonPip -Arguments @("install", "git+https://github.com/xinntao/BasicSR.git@master") -ErrorMessage "Failed to install BasicSR."
+Invoke-PythonPip -Arguments @("uninstall", "-y", "gfpgan") -ErrorMessage "Failed to uninstall gfpgan."
+Invoke-PythonPip -Arguments @("install", "git+https://github.com/TencentARC/GFPGAN.git@master") -ErrorMessage "Failed to install GFPGAN."
 
 Write-Step "Initial launch to trigger model download (can take time)"
 & $pythonExe (Join-Path $projectDir "run.py")
