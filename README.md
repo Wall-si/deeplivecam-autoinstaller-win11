@@ -1,7 +1,7 @@
 # DeepLiveCam Auto Installer (Windows)
 
 This is a ready-to-share Git repository.  
-Your friend can clone it and run one script to download and install Deep-Live-Cam automatically.
+You can clone it and run one script to download and install Deep-Live-Cam automatically.
 
 ## What this repo does
 
@@ -14,7 +14,7 @@ Your friend can clone it and run one script to download and install Deep-Live-Ca
 
 ## Requirements
 
-- Windows
+- Windows 10/11
 - Internet connection
 - `winget` (recommended for auto-install of Git/Python)
 
