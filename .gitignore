@@ -1,0 +1,5 @@
+.venv/
+Deep-Live-Cam/
+*.log
+__pycache__/
+*.pyc
