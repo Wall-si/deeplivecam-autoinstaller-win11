@@ -53,7 +53,21 @@ Write-Step "Upgrading pip"
 & $pythonExe -m pip install --upgrade pip
 
 Write-Step "Installing Deep-Live-Cam dependencies"
-& $pythonExe -m pip install -r (Join-Path $projectDir "requirements.txt")
+$requirementsPath = Join-Path $projectDir "requirements.txt"
+try {
+    & $pythonExe -m pip install -r $requirementsPath
+} catch {
+    Write-Host "Default requirements failed, trying compatible ONNX fallback..." -ForegroundColor Yellow
+    $patchedRequirements = Join-Path $root "requirements.patched.txt"
+    $requirementsContent = Get-Content $requirementsPath
+    $requirementsContent = $requirementsContent | ForEach-Object {
+        if ($_ -match "^onnxruntime-gpu==") { "onnxruntime-gpu==1.23.2" }
+        elseif ($_ -match "^onnxruntime==") { "onnxruntime==1.23.2" }
+        else { $_ }
+    }
+    Set-Content -Path $patchedRequirements -Value $requirementsContent -Encoding ASCII
+    & $pythonExe -m pip install -r $patchedRequirements
+}
 
 Write-Step "Installing GFPGAN / BasicSR compatibility packages"
 & $pythonExe -m pip install git+https://github.com/xinntao/BasicSR.git@master

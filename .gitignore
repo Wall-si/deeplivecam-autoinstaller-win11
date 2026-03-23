@@ -3,3 +3,4 @@ Deep-Live-Cam/
 *.log
 __pycache__/
 *.pyc
+requirements.patched.txt

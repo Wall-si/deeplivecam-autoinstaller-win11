@@ -47,3 +47,4 @@ cd deeplivecam-auto-installer
 
 - Installed app source will be inside `Deep-Live-Cam/`.
 - Virtual environment will be in `.venv/`.
+- If upstream `requirements.txt` has incompatible ONNX pins for your Python, installer auto-falls back to `onnxruntime(-gpu)==1.23.2`.
